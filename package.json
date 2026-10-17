@@ -1,0 +1,17 @@
+{
+  "name": "cotizaciones",
+  "version": "1.0.0-v5",
+  "description": "PWA portfolio iOS — código solo, sin datos de cartera.",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.mjs",
+    "test:calc": "node --test tests/calc.test.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "playwright": "^1.49.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
