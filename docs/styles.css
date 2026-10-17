@@ -81,6 +81,7 @@ body {
 #contenido-newsletter p { margin: 6px 0; font-size: 0.95rem; color: #eaeaea; }
 #contenido-newsletter a { color: #60a5fa; text-decoration: underline; rel:noopener noreferrer; }
 #contenido-newsletter a[rel] { text-decoration: underline; }
+.plain-md { white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; color: #eaeaea; margin: 6px 0; }
 
 .efectivo { font-size: 0.95rem; color: #9aa0a6; margin: 4px 0; }
 .total-general { font-size: 1.25rem; font-weight: 800; margin-top: 6px; padding-top: 8px; border-top: 1px solid #2a2b33; }

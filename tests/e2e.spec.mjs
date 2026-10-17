@@ -11,6 +11,7 @@ function servir(archivo) {
   if (archivo.endsWith(".js")) return { status: 200, headers: { "content-type": "application/javascript; charset=utf-8" }, body: readFileSync(p) };
   if (archivo.endsWith(".webmanifest")) return { status: 200, headers: { "content-type": "application/manifest+json" }, body: readFileSync(p) };
   if (archivo.endsWith(".png")) return { status: 200, headers: { "content-type": "image/png" }, body: readFileSync(p) };
+  if (archivo.endsWith(".txt")) return { status: 200, headers: { "content-type": "text/plain; charset=utf-8" }, body: readFileSync(p) };
   return { status: 404, body: "" };
 }
 
@@ -37,6 +38,10 @@ const BASE = "http://localhost:" + PORT;
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  // El SW interfiere con la interceptación de rutas de Playwright; se deshabilita salvo en el test del SW.
+  if (!test.info().title.startsWith("m)")) {
+    await page.route("**/sw.js", (r) => r.abort());
+  }
 });
 
 const FIXT_PRECIOS = {
@@ -220,4 +225,76 @@ test("j) DOM sin dólar ni MEP/CCL/oficial", async ({ page }) => {
     expect(texto.toLowerCase().includes(kw.toLowerCase())).toBe(false);
   }
   expect(texto).not.toMatch(/\$\s*\d/);
+});
+
+test("k) banner con fecha y sha de app-data", async ({ page }) => {
+  await page.goto(BASE + "/cotizaciones/");
+  await page.waitForTimeout(1200);
+  await routeFixtures(page);
+  await configurarToken(page, "t");
+  const banner = await page.locator("#banner-sinc").innerText();
+  expect(banner).toContain("Cartera actualizada");
+  expect(banner).toMatch(/sha\s+\S{7}/);
+  expect(banner).toContain("Precios");
+});
+
+test("l) cabecera realizado 'sin datos' con realizadas null", async ({ page }) => {
+  const app = JSON.parse(JSON.stringify(FIXT_APPDATA));
+  app.realizadas = null;
+  app.realizadas_motivo = "hoja Realizadas ausente";
+  await page.goto(BASE + "/cotizaciones/");
+  await page.waitForTimeout(1200);
+  await page.route("**/api.github.com/repos/garantias3-afk/pipeline-bursatil/contents/*", async (route) => {
+    const file = route.request().url().split("/contents/")[1].split("?")[0];
+    const data = file === "app-data.json" ? app : FIXT_PRECIOS;
+    await route.fulfill({ status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ sha: "s-" + file, content: b64(data) }) });
+  });
+  await configurarToken(page, "t");
+  await expect(page.locator("#tot-realizado")).toContainText("sin datos");
+  await expect(page.locator("#realizado-det")).toContainText("hoja Realizadas ausente");
+});
+
+test("m) SW registrado y CACHE_NAME versionado", async ({ page }) => {
+  await page.goto(BASE + "/cotizaciones/");
+  await page.waitForTimeout(2000);
+  const scope = await page.evaluate(async () => {
+    const r = await navigator.serviceWorker.getRegistration();
+    return r ? r.scope : null;
+  });
+  expect(scope).toBeTruthy();
+  const keys = await page.evaluate(async () => await caches.keys());
+  expect(keys.some((k) => k.startsWith("cotizaciones-shell-"))).toBe(true);
+});
+
+test("n) newsletter en texto plano si DOMPurify no carga", async ({ page }) => {
+  const app = JSON.parse(JSON.stringify(FIXT_APPDATA));
+  app.newsletter = { digest_md: "**Hola** <img src=x onerror=alert(1)>", digest_file: "x.md", vigilancia_md: null, vigilancia_file: null };
+  await page.route("**/dompurify.min.js", (route) => route.abort());
+  await page.goto(BASE + "/cotizaciones/");
+  await page.waitForTimeout(1200);
+  await page.route("**/api.github.com/repos/garantias3-afk/pipeline-bursatil/contents/*", async (route) => {
+    const file = route.request().url().split("/contents/")[1].split("?")[0];
+    const data = file === "app-data.json" ? app : FIXT_PRECIOS;
+    await route.fulfill({ status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ sha: "s", content: b64(data) }) });
+  });
+  await configurarToken(page, "t");
+  await page.locator("#btn-newsletter").click();
+  await page.waitForTimeout(500);
+  await expect(page.locator("#contenido-newsletter pre.plain-md")).toHaveCount(1);
+  await expect(page.locator("#contenido-newsletter img")).toHaveCount(0);
+});
+
+test("o) vencimiento persistido y aviso", async ({ page }) => {
+  await page.goto(BASE + "/cotizaciones/");
+  await page.waitForTimeout(1200);
+  await routeFixtures(page);
+  await page.locator('#btn-config').click();
+  await page.waitForTimeout(300);
+  await page.locator('input#input-token').fill("t");
+  await page.locator('input#input-expiry').fill("2020-01-01T00:00:00Z");
+  await page.locator('#btn-guardar-token').click();
+  await page.waitForTimeout(1500);
+  const exp = await page.evaluate(() => localStorage.getItem("cotizaciones_token_expiry"));
+  expect(exp).toContain("2020");
+  await expect(page.locator("#banner-sinc")).toContainText("TOKEN EXPIRADO");
 });
