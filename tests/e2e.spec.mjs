@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 
-const ROOT = join(process.cwd(), "..");
+const ROOT = process.cwd();
 function servir(archivo) {
   const p = join(ROOT, archivo);
   if (archivo.endsWith(".html")) return { status: 200, headers: { "content-type": "text/html; charset=utf-8" }, body: readFileSync(p) };
@@ -19,8 +19,13 @@ const PORT = 18988;
 test.beforeAll(async () => {
   server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
-    const path = url.pathname === "/" ? "/cotizaciones/docs/index.html" : url.pathname;
-    const r = servir(path.slice(1));
+    let path = url.pathname === "/" ? "/cotizaciones/" : url.pathname;
+    const rest = path.slice(1);
+    let file;
+    if (rest === "cotizaciones/") file = "docs/index.html";
+    else if (rest.startsWith("cotizaciones/")) file = "docs/" + rest.slice("cotizaciones/".length);
+    else file = "docs/index.html";
+    const r = servir(file);
     res.writeHead(r.status, r.headers || {});
     res.end(r.body);
   });
@@ -37,8 +42,8 @@ test.beforeEach(async ({ page }) => {
 const FIXT_PRECIOS = {
   schema: 4, generated_at: "2026-10-16T20:00:00Z", run_id: "e2e",
   precios: {
-    SPY: { price_usd: 500, market: "nYSE", source: "IOL", ts: "2026-10-16T16:00:00Z", session_ok: true, motivo: "" },
-    LUNR: { price_usd: 10, market: "nASDAQ", source: "YAHOO", ts: "2026-10-16T16:00:00Z", session_ok: true, motivo: "", ratio_ok: null },
+    AAA: { price_usd: 500, market: "nYSE", source: "IOL", ts: "2026-10-16T16:00:00Z", session_ok: true, motivo: "" },
+    BBB: { price_usd: 10, market: "nASDAQ", source: "YAHOO", ts: "2026-10-16T16:00:00Z", session_ok: true, motivo: "", ratio_ok: null },
   },
   resumen: { total: 23, frescos: 2, iol: 1, yahoo: 1, no_verificado: 0, ratio_sospechoso: 0 },
 };
@@ -47,8 +52,8 @@ const FIXT_APPDATA = {
   excel: { path: "config/x.xlsx", sha256: "aa", mtime: "2026-10-16T20:00:00Z" },
   portfolio: {
     tickers: [
-      { ticker: "SPY", brokers: "IEB", instrumento: "CEDEAR", ratio: 60, cant: 10, costo_usd: 4000, valor_cierre: 5000, peso_excel: 50 },
-      { ticker: "LUNR", brokers: "IBKR", instrumento: "DIRECTA", ratio: null, cant: 100, costo_usd: 500, valor_cierre: 1000, peso_excel: 50 },
+      { ticker: "AAA", brokers: "IEB", instrumento: "CEDEAR", ratio: 60, cant: 10, costo_usd: 4000, valor_cierre: 5000, peso_excel: 50 },
+      { ticker: "BBB", brokers: "IBKR", instrumento: "DIRECTA", ratio: null, cant: 100, costo_usd: 500, valor_cierre: 1000, peso_excel: 50 },
     ],
     efectivo: [{ label: "Efectivo", usd: 100 }],
     total_tenencias: 6000, total_general: 6100, fecha_cierre_excel: "2026-10-16",
@@ -56,10 +61,10 @@ const FIXT_APPDATA = {
   realizadas: {
     motivo_null: null,
     filas: [
-      { fecha: "2026-03-01", ticker: "SPY", tipo: "VENTA", cant: 2, ingreso_neto_usd: 200, costo_usd: 100, comisiones_usd: 5, resultado_usd: 95, moneda_original: "USD", monto_original: 200, base_usd: "USD", metodo_costo: "PPP", motivo: "STOP", ref_log: "", flags: [] },
-      { fecha: "2026-03-02", ticker: "LUNR", tipo: "DIVIDENDO", cant: 0, ingreso_neto_usd: 10, costo_usd: 0, comisiones_usd: 0, resultado_usd: 10, moneda_original: "USD", monto_original: 10, base_usd: "USD", metodo_costo: "PPP", motivo: "DIVIDENDO", ref_log: "", flags: [] },
+      { fecha: "2026-03-01", ticker: "AAA", tipo: "VENTA", cant: 2, ingreso_neto_usd: 200, costo_usd: 100, comisiones_usd: 5, resultado_usd: 95, moneda_original: "USD", monto_original: 200, base_usd: "USD", metodo_costo: "PPP", motivo: "STOP", ref_log: "", flags: [] },
+      { fecha: "2026-03-02", ticker: "BBB", tipo: "DIVIDENDO", cant: 0, ingreso_neto_usd: 10, costo_usd: 0, comisiones_usd: 0, resultado_usd: 10, moneda_original: "USD", monto_original: 10, base_usd: "USD", metodo_costo: "PPP", motivo: "DIVIDENDO", ref_log: "", flags: [] },
     ],
-    totales: { total_usd: 105, por_anio: { "2026": 105 }, por_ticker: { SPY: 95, LUNR: 10 }, por_motivo: { STOP: 95, DIVIDENDO: 10 }, dividendos_usd: 10, filas_excluidas: 0 },
+    totales: { total_usd: 105, por_anio: { "2026": 105 }, por_ticker: { AAA: 95, BBB: 10 }, por_motivo: { STOP: 95, DIVIDENDO: 10 }, dividendos_usd: 10, filas_excluidas: 0 },
   },
   newsletter: null,
   checks: { cuadre_tenencias_dif_usd: 0, tickers: 23, mapa_cubre_todo: true, unidad_sospechosa: [] },
@@ -83,13 +88,13 @@ async function configurarToken(page, tok) {
 }
 
 test("a) sin token → banner 'Configurá el token'", async ({ page }) => {
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await expect(page.locator("#banner-sinc")).toContainText("Configurá el token");
 });
 
 test("b) token válido + 200 → cartera y pestaña REALIZADAS", async ({ page }) => {
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await routeFixtures(page);
   await configurarToken(page, "token-invalido-de-prueba");
@@ -102,7 +107,7 @@ test("b) token válido + 200 → cartera y pestaña REALIZADAS", async ({ page }
 
 test("c) mismo sha → no re-descarga", async ({ page }) => {
   let n = 0;
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await page.route("**/api.github.com/repos/garantias3-afk/pipeline-bursatil/contents/*", async (route) => {
     n++;
@@ -120,7 +125,7 @@ test("c) mismo sha → no re-descarga", async ({ page }) => {
 });
 
 test("d) 401 → banner token expirado", async ({ page }) => {
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await page.route("**/api.github.com/repos/garantias3-afk/pipeline-bursatil/contents/*", async (route) => {
     await route.fulfill({ status: 401, headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Bad credentials" }) });
@@ -130,7 +135,7 @@ test("d) 401 → banner token expirado", async ({ page }) => {
 });
 
 test("e) 404 → archivo de datos ausente", async ({ page }) => {
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await page.route("**/api.github.com/repos/garantias3-afk/pipeline-bursatil/contents/*", async (route) => {
     await route.fulfill({ status: 404, headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Not Found" }) });
@@ -140,7 +145,7 @@ test("e) 404 → archivo de datos ausente", async ({ page }) => {
 });
 
 test("f) offline → SIN CONEXIÓN", async ({ page }) => {
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await routeFixtures(page);
   await configurarToken(page, "t");
@@ -154,7 +159,7 @@ test("g) XSS en markdown y motivo → sanitizado", async ({ page }) => {
   const appdataXSS = JSON.parse(JSON.stringify(FIXT_APPDATA));
   appdataXSS.newsletter = { digest_md: "<img src=x onerror=alert(1)>", digest_file: "x.md", vigilancia_md: null, vigilancia_file: null };
   appdataXSS.realizadas.filas[0].motivo = "<script>alert(2)</script>";
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await page.route("**/api.github.com/repos/garantias3-afk/pipeline-bursatil/contents/*", async (route) => {
     const file = route.request().url().split("/contents/")[1].split("?")[0];
@@ -178,7 +183,7 @@ test("g) XSS en markdown y motivo → sanitizado", async ({ page }) => {
 test("h) token no aparece en console ni URLs", async ({ page }) => {
   const consoleMsgs = [];
   page.on("console", (m) => consoleMsgs.push(m.text()));
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await routeFixtures(page);
   await configurarToken(page, "mi-token-secreto-12345");
@@ -190,7 +195,7 @@ test("h) token no aparece en console ni URLs", async ({ page }) => {
 
 test("i) visibilitychange → re-chequea", async ({ page }) => {
   let n = 0;
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await page.route("**/api.github.com/repos/garantias3-afk/pipeline-bursatil/contents/*", async (route) => {
     n++;
@@ -206,7 +211,7 @@ test("i) visibilitychange → re-chequea", async ({ page }) => {
 });
 
 test("j) DOM sin dólar ni MEP/CCL/oficial", async ({ page }) => {
-  await page.goto(BASE + "/cotizaciones/docs/index.html");
+  await page.goto(BASE + "/cotizaciones/");
   await page.waitForTimeout(1200);
   await routeFixtures(page);
   await configurarToken(page, "t");

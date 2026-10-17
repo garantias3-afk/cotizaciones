@@ -10,8 +10,8 @@ const calc = await import("file://" + calcPath);
 
 describe("calc.js", () => {
   it("CEDEAR = (cant ÷ ratio) × precio_usd; directa = cant × precio_usd", () => {
-    const ced = { ticker: "SPY", instrumento: "CEDEAR", cant: 120, ratio: 60, costo_usd: 1000 };
-    const dir = { ticker: "LUNR", instrumento: "DIRECTA", cant: 10, costo_usd: 500 };
+    const ced = { ticker: "AAA", instrumento: "CEDEAR", cant: 120, ratio: 60, costo_usd: 1000 };
+    const dir = { ticker: "BBB", instrumento: "DIRECTA", cant: 10, costo_usd: 500 };
     assert.strictEqual(calc.valorVivo(ced, 300), 600); // (120/60)*300 = 600
     assert.strictEqual(calc.valorVivo(dir, 40), 400);  // 10*40
     assert.strictEqual(calc.pnlNoRealizado(600, 1000), -400);
