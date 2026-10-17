@@ -9,9 +9,9 @@
   "theme_color": "#0b0c10",
   "description": "App portfolio iOS PWA — cartera en USD, P&L no realizado y realizado, sin tipo de cambio.",
   "icons": [
-    { "src": "/cotizaciones/docs/icons/icon-180.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "/cotizaciones/docs/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/cotizaciones/docs/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/cotizaciones/docs/icons/maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/cotizaciones/icons/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/cotizaciones/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/cotizaciones/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/cotizaciones/icons/maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

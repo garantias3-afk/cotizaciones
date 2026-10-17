@@ -2,16 +2,16 @@
 const CACHE_NAME = "cotizaciones-shell-v1";
 const SHELL = [
   "/cotizaciones/",
-  "/cotizaciones/docs/index.html",
-  "/cotizaciones/docs/styles.css",
-  "/cotizaciones/docs/calc.js",
-  "/cotizaciones/docs/app.js",
-  "/cotizaciones/docs/manifest.webmanifest",
-  "/cotizaciones/docs/icons/icon-180.png",
-  "/cotizaciones/docs/icons/icon-192.png",
-  "/cotizaciones/docs/icons/icon-512.png",
-  "/cotizaciones/docs/icons/apple-touch-icon.png",
-  "/cotizaciones/docs/icons/maskable.png",
+  "/cotizaciones/index.html",
+  "/cotizaciones/styles.css",
+  "/cotizaciones/calc.js",
+  "/cotizaciones/app.js",
+  "/cotizaciones/manifest.webmanifest",
+  "/cotizaciones/icons/icon-180.png",
+  "/cotizaciones/icons/icon-192.png",
+  "/cotizaciones/icons/icon-512.png",
+  "/cotizaciones/icons/apple-touch-icon.png",
+  "/cotizaciones/icons/maskable.png",
 ];
 
 self.addEventListener("install", (ev) => {
